@@ -1,6 +1,6 @@
 from PIL import Image
 import pytesseract
-from fastapi import FastAPI,  status, File, BackgroundTasks, Request , Header
+from fastapi import FastAPI,  status, File, BackgroundTasks, Request , Header, Form
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 import os
@@ -15,7 +15,8 @@ from passlib.context import CryptContext
 from app.auth import *
 from app.models import *
 from config.settings import *
-
+from fastapi.encoders import jsonable_encoder
+import json
 
 # Creating a FastAPI app.
 app = FastAPI(
@@ -32,12 +33,22 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 
+@app.post("/sign_up", response_model=User)
+async def sign_up(username:str = Form(), email:str = Form(), password:str = Form(),):
+    user = {
+        'username': username,
+        'email': email,
+        'password': password,
+    }
+    new_user = await db["user"].insert_one(user)
+    created_user = await db["user"].find_one({"_id": new_user.inserted_id})
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=str(created_user))
 
 
 
 
 
-@app.post("/token", response_model=Token)
+@app.post("/generate-token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
