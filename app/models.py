@@ -30,7 +30,6 @@ class PyObjectId(ObjectId):
 
 
 class Token(BaseModel):
-    user: str
     access_token: str
     token_type: str
 

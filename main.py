@@ -18,6 +18,7 @@ from config.settings import *
 from fastapi.encoders import jsonable_encoder
 import json
 from passlib.hash import pbkdf2_sha256
+import datetime
 
 # Creating a FastAPI app.
 app = FastAPI(
@@ -40,10 +41,15 @@ async def sign_up(full_name:str = Form(), email:str = Form(), password:str = For
         'full_name': full_name,
         'email': email,
         'password': pbkdf2_sha256.hash(password),
+        'expiration_date': (datetime.datetime.now() + datetime.timedelta(days=365)).strftime("%Y-%m-%d"),
+        'created_at': (datetime.datetime.now()).strftime("%Y-%m-%d")
     }
-    new_user = await db["user"].insert_one(user)
-    created_user = await db["user"].find_one({"_id": new_user.inserted_id})
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=str(created_user))
+    is_present =  await db["user"].find_one({"email": email})
+    if not is_present:
+        new_user = await db["user"].insert_one(user)
+        created_user = await db["user"].find_one({"_id": new_user.inserted_id})
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content="Account created successfully! Welcome to your Aiden account")
+    return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content="Email Address already in use. Please try login.")
 
 
 
@@ -62,7 +68,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = await create_access_token(
         data={"sub": user}, expires_delta=access_token_expires
     )
-    return {"user": user, "access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/users/me/", response_model=User)
