@@ -55,7 +55,7 @@ async def sign_up(full_name:str = Form(), email:str = Form(), password:str = For
 
 
 
-@app.post("/generate-token", response_model=Token)
+@app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -66,25 +66,19 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
-        data={"sub": user}, expires_delta=access_token_expires
+        data={"user": form_data.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/users/me/", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    return current_user
-
-
-@app.get("/users/me/items/")
-async def read_own_items(current_user: User = Depends(get_current_active_user)):
-    return [{"item_id": "Foo", "owner": current_user.username}]
 
 
 
 
-@app.post("/upload_image/", response_model=User)
-async def upload_image(doc: bytes = File(), current_user: User = Depends(get_current_active_user)):
+
+
+@app.post("/upload_image/")
+async def upload_image(doc: bytes = File(), current_user: User = Depends(get_current_user)):
     content = io.BytesIO(doc)
     data = pytesseract.image_to_string(Image.open(content))
     # remove hyperlinks

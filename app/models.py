@@ -49,6 +49,3 @@ class User(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-
-class UserInDB(User):
-    hashed_password: str
