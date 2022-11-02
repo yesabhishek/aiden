@@ -13,8 +13,6 @@ MONGO_DB_URL = os.getenv("MONGO_DB_URL")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 # Setting the path to the tesseract executable.
 pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_PATH")
 

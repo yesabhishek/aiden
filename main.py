@@ -17,6 +17,7 @@ from app.models import *
 from config.settings import *
 from fastapi.encoders import jsonable_encoder
 import json
+from passlib.hash import pbkdf2_sha256
 
 # Creating a FastAPI app.
 app = FastAPI(
@@ -34,11 +35,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.post("/sign_up", response_model=User)
-async def sign_up(username:str = Form(), email:str = Form(), password:str = Form(),):
+async def sign_up(full_name:str = Form(), email:str = Form(), password:str = Form(),):
     user = {
-        'username': username,
+        'full_name': full_name,
         'email': email,
-        'password': password,
+        'password': pbkdf2_sha256.hash(password),
     }
     new_user = await db["user"].insert_one(user)
     created_user = await db["user"].find_one({"_id": new_user.inserted_id})
@@ -50,7 +51,7 @@ async def sign_up(username:str = Form(), email:str = Form(), password:str = Form
 
 @app.post("/generate-token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = await authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,10 +59,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+    access_token = await create_access_token(
+        data={"sub": user}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"user": user, "access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/users/me/", response_model=User)

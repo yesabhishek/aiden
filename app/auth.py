@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from config.settings import *
 from app.models import *
-
+from passlib.hash import pbkdf2_sha256
 
 
 def verify_password(plain_password, hashed_password):
@@ -23,14 +23,12 @@ def get_user(db, username: str):
         return UserInDB(**user_dict)
 
 
-def authenticate_user(fake_db, username: str, password: str):
-    if user := get_user(fake_db, username):
-        return user if verify_password(password, user.hashed_password) else False
-    else:
-        return False
+async def authenticate_user(email: str, password: str):
+    user = await db["user"].find_one({"email": email})
+    return pbkdf2_sha256.verify(password, user['password']) if user else False
 
 
-def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+async def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta

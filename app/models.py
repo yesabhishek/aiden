@@ -9,7 +9,7 @@ from config.settings import *
 import motor.motor_asyncio
 from bson import ObjectId
 
-client = motor.motor_asyncio.AsyncIOMotorClient()
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DB_URL)
 db = client.users
 
 
@@ -30,6 +30,7 @@ class PyObjectId(ObjectId):
 
 
 class Token(BaseModel):
+    user: str
     access_token: str
     token_type: str
 
