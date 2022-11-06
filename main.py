@@ -19,6 +19,8 @@ from fastapi.encoders import jsonable_encoder
 import json
 from passlib.hash import pbkdf2_sha256
 import datetime
+import qrcode
+
 
 # Creating a FastAPI app.
 app = FastAPI(
@@ -109,8 +111,13 @@ async def send_notification(email: str, background_tasks: BackgroundTasks):
     return {"message": "Notification sent in the background"}
 
 
-@app.post("/generate-qr/{url}")
+@app.post("/generate-qr/")
 async def generate_qr(url: str):
+    # Encoding data using make() function
+    img = qrcode.make(url)
+
+    # Saving as an image file
+    img.save('MyQRCode1.png')
     return {"message": "Nice"}
 
 
